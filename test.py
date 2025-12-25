@@ -2,16 +2,9 @@ import numpy as np
 import random
 
 
-pairings = []
-players = [10,20,30,40,50,60]
-for _ in range(3):
-    index = random.randrange(len(players))
-    elem1 = players.pop(index)
+def get_action_rules(action_rule):
+    # Convert rule_id to 4-bit binary
+    bits = [(action_rule >> i) & 1 for i in range(4)]  # bits[0]=LSB, bits[3]=MSB
+    return bits
 
-    index = random.randrange(len(players))
-    elem2 = players.pop(index)
-
-    pairings.append((elem1, elem2))
-
-print(pairings)
-print(pairings[0][0])
+print(get_action_rules(5))
