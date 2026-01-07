@@ -1,11 +1,7 @@
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-import copy
-from pettingzoo import ParallelEnv
-class Qlearner:
-    """A Q-learning agent"""
 
+class Qlearner:
     def __init__(
             self,
             seeded=False,
@@ -34,23 +30,43 @@ class Qlearner:
         self.state_history = []
         self.action_history = []
 
+        # --- AJOUT (Section 5) ---
+        # Q-table pour juger les autres agents (4 états possibles, 2 actions: rep 0 ou 1)
+        self.judge_qtable = np.zeros((4, 2))
+        self.judge_memory = []  # stocke les jugements sans reward immédiat
+        # ------------------------
+
     def reset_agent(self):
         self.qtable = np.zeros((self.state_size, self.action_size))
+        self.judge_qtable = np.zeros((4, 2))  # --- AJOUT ---
+        self.judge_memory = []                # --- AJOUT ---
 
     def select_greedy(self, state):
         # np.argmax(self.qtable[state]) will select first entry if two or more Q-values are equal, but we want true randomness:
         return np.random.choice(np.flatnonzero(np.isclose(self.qtable[state], self.qtable[state].max())))
 
-    def select_action(self, state):
+    def select_action(self, state, exploration=True):
         if self.seeded:
             return 5
-        if np.random.rand() < self.epsilon:
+        if exploration and np.random.rand() < self.epsilon:
             action = random.randrange(self.action_size)
         else:
             action = self.select_greedy(state)
         self.state_history.append(state)
         self.action_history.append(action)
         return action
+
+    # --- AJOUT (Section 5) ---
+    def select_judge_action(self, judge_state):
+        """Choisit la réputation (0 ou 1) à attribuer"""
+        if np.random.rand() < self.epsilon:
+            return random.randrange(2)
+        return np.random.choice(np.flatnonzero(np.isclose(self.judge_qtable[judge_state], self.judge_qtable[judge_state].max())))
+
+    def store_judgement(self, judge_state, judge_action):
+        """Stocke le jugement (pas de reward immédiat)"""
+        self.judge_memory.append((judge_state, judge_action))
+    # ------------------------
 
     def update(self, state, action, new_state, reward, done):
         lr = self.learning_rate
@@ -66,6 +82,15 @@ class Qlearner:
 
             k = len(self.average_episode_total_rewards) + 1  # amount of episodes that have passed
             self._calculate_average_episode_reward(k, episode_reward)
+
+            # --- AJOUT (Section 5) ---
+            # Le reward final rétro-propage sur les jugements passés
+            for s_j, a_j in self.judge_memory:
+                self.judge_qtable[s_j, a_j] += lr * (
+                    episode_reward - self.judge_qtable[s_j, a_j]
+                )
+            self.judge_memory = []
+            # ------------------------
 
             # reset the rewards for the next episode:
             self.rewards_this_episode = []
