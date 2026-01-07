@@ -5,8 +5,8 @@ from pettingzoo import ParallelEnv
 class MatrixGame(ParallelEnv):
     def __init__(self, reward_matrix, agents, norm, judging=False, alpha=0.0, chi=0.01):
 
-        np.random.seed(47)
-        random.seed(47)
+        np.random.seed(46)
+        random.seed(46)
 
         self.agents = agents
         self.possible_agents = self.agents[:]
